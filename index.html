@@ -474,7 +474,7 @@
         // State variables for Bit Manipulator
         let bitArray = new Array(16).fill(0);
         // Default to 1.0 (Bit 15=0, Exponent=01111=15, Mantissa=0)
-        bitArray[14] = 1; bitArray[13] = 1; bitArray[12] = 1; bitArray[11] = 1;
+        bitArray[13] = 1; bitArray[12] = 1; bitArray[11] = 1; bitArray[10] = 1;
 
         // Current active tab
         let currentTab = 'lab';
@@ -493,27 +493,17 @@
         function setPreset(type) {
             bitArray.fill(0);
             if (type === '1.0') {
-                // Sign=0, Exp=15 (01111), Mant=0
-                [14, 13, 12, 11].forEach(i => bitArray[i] = 1);
+                bitArray = decimalToFloat16Bits(1.0);
             } else if (type === '-2.5') {
-                // -2.5 = -1.01_2 * 2^1 -> Exp=16 (10000), Mant=0100000000
-                bitArray[15] = 1; // Sign
-                bitArray[14] = 1; // Exp 16
-                bitArray[8] = 1;  // Mant 0.25 (1/4)
+                bitArray = decimalToFloat16Bits(-2.5);
             } else if (type === '0.15625') {
-                // 0.15625 = 5/32 = 1.25 * 2^-3 -> Exp=12 (01100), Mant=0100000000
-                [13, 12].forEach(i => bitArray[i] = 1);
-                bitArray[8] = 1;
+                bitArray = decimalToFloat16Bits(0.15625);
             } else if (type === '65504') {
-                // Max normalized: Exp=30 (11110), Mant=all 1
-                [14, 13, 12, 11].forEach(i => bitArray[i] = 1);
-                for(let i=0; i<10; i++) bitArray[i] = 1;
+                bitArray = decimalToFloat16Bits(65504);
             } else if (type === 'min-pos') {
-                // Min positive normalized: Exp=1 (00001), Mant=0
-                bitArray[10] = 1;
+                bitArray = decimalToFloat16Bits(Math.pow(2, -14));
             } else if (type === '0.1') {
-                // 0.1 in float16: Sign=0, Exp=11 (01011), Mant=0110011010
-                [13, 11, 8, 7, 4, 3, 1].forEach(i => bitArray[i] = 1);
+                bitArray = decimalToFloat16Bits(0.1);
             } else if (type === 'inf') {
                 // +Inf: Exp=31 (11111), Mant=0
                 [14, 13, 12, 11, 10].forEach(i => bitArray[i] = 1);
