@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>16ビット浮動小数点数 インタラクティブ学習ツール | 高校情報Ⅰ</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans JP', 'Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        sign: { light: '#fee2e2', DEFAULT: '#ef4444', dark: '#991b1b' },
+                        exp: { light: '#dcfce7', DEFAULT: '#22c55e', dark: '#166534' },
+                        mant: { light: '#fef3c7', DEFAULT: '#f59e0b', dark: '#92400e' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .bit-btn {
+            transition: all 0.15s ease-in-out;
+            user-select: none;
+        }
+        .bit-btn:hover {
+            transform: translateY(-2px);
+        }
+        .bit-btn:active {
+            transform: translateY(1px);
+        }
+        .tab-btn.active {
+            border-bottom: 3px solid #38bdf8;
+            color: #38bdf8;
+            background-color: rgba(56, 189, 248, 0.1);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans antialiased">
+
+    <!-- Header Navigation -->
+    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-gradient-to-tr from-cyan-500 to-blue-600 p-2 rounded-lg shadow-lg">
+                        <i class="fa-solid fa-microchip text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-white leading-tight">16ビット浮動小数点数 シミュレータ</h1>
+                        <p class="text-xs text-cyan-400 font-medium">高校情報Ⅰ 必修単元「数値の表現」対応</p>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-2 text-xs bg-slate-800/80 p-1.5 rounded-lg border border-slate-700">
+                    <span class="px-2 py-1 rounded bg-red-950/80 text-red-300 font-mono border border-red-800/50">符号 1bit</span>
+                    <span class="px-2 py-1 rounded bg-green-950/80 text-green-300 font-mono border border-green-800/50">指数 5bits (バイアス15)</span>
+                    <span class="px-2 py-1 rounded bg-amber-950/80 text-amber-300 font-mono border border-amber-800/50">仮数 10bits (隠しビット)</span>
+                </div>
+            </div>
+            <!-- Tab Navigation Bar -->
+            <div class="flex border-t border-slate-800/80 overflow-x-auto no-scrollbar">
+                <button onclick="switchTab('lab')" id="tab-lab" class="tab-btn active px-4 py-3 text-sm font-semibold text-slate-300 hover:text-white flex items-center space-x-2 whitespace-nowrap">
+                    <i class="fa-solid fa-flask text-cyan-400"></i>
+                    <span>① ビット操作 & 解析</span>
+                </button>
+                <button onclick="switchTab('converter')" id="tab-converter" class="tab-btn px-4 py-3 text-sm font-semibold text-slate-300 hover:text-white flex items-center space-x-2 whitespace-nowrap">
+                    <i class="fa-solid fa-calculator text-emerald-400"></i>
+                    <span>② 10進数変換 & 丸め誤差</span>
+                </button>
+                <button onclick="switchTab('quiz')" id="tab-quiz" class="tab-btn px-4 py-3 text-sm font-semibold text-slate-300 hover:text-white flex items-center space-x-2 whitespace-nowrap">
+                    <i class="fa-solid fa-graduation-cap text-amber-400"></i>
+                    <span>③ 確認クイズ</span>
+                </button>
+                <button onclick="switchTab('theory')" id="tab-theory" class="tab-btn px-4 py-3 text-sm font-semibold text-slate-300 hover:text-white flex items-center space-x-2 whitespace-nowrap">
+                    <i class="fa-solid fa-book-open text-purple-400"></i>
+                    <span>④ 解説 & 用語集</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- TAB 1: BIT MANIPULATOR -->
+        <section id="sec-lab" class="space-y-6">
+            <!-- Instructions Banner -->
+            <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-4 flex items-start space-x-3 shadow-md">
+                <i class="fa-solid fa-circle-info text-cyan-400 text-lg mt-0.5"></i>
+                <div class="text-sm text-slate-300">
+                    <span class="font-bold text-white">使い方:</span> 下の16個のビット（0/1）をクリックして数値を自由に変化させてみましょう。プリセットボタンで有名な数値（1.0, 0.5, 0.1など）をセットすることもできます。
+                </div>
+            </div>
+
+            <!-- Bit Switches Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-6">
+                <!-- Preset Buttons -->
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-4">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-bookmark text-cyan-500"></i> プリセット値:
+                    </span>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="setPreset('1.0')" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">1.0</button>
+                        <button onclick="setPreset('-2.5')" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">-2.5</button>
+                        <button onclick="setPreset('0.15625')" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">0.15625</button>
+                        <button onclick="setPreset('65504')" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">最大値 (65504)</button>
+                        <button onclick="setPreset('min-pos')" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">最小正数 (2⁻¹⁴)</button>
+                        <button onclick="setPreset('0.1')" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 border border-amber-700/50 transition">0.1 (丸め誤差あり)</button>
+                        <button onclick="setPreset('inf')" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">+無限大</button>
+                        <button onclick="setPreset('nan')" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">NaN (非数)</button>
+                        <button onclick="setPreset('zero')" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">0.0</button>
+                    </div>
+                </div>
+
+                <!-- 16 Bit Row -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-slate-400">16ビット表現 (Bit 15 ➔ Bit 0)</span>
+                        <span id="hex-display" class="font-mono text-xs bg-slate-800 text-cyan-300 px-2.5 py-1 rounded border border-slate-700">16進数: 0x3C00</span>
+                    </div>
+
+                    <!-- Bit Blocks Grid -->
+                    <div class="grid grid-cols-16 gap-1 sm:gap-2">
+                        <!-- Bit 15: Sign -->
+                        <div class="col-span-1 flex flex-col items-center">
+                            <span class="text-[10px] font-mono text-red-400 mb-1">15</span>
+                            <button id="bit-15" onclick="toggleBit(15)" class="bit-btn w-full aspect-square rounded-lg font-mono font-bold text-lg flex items-center justify-center bg-red-950 text-red-400 border border-red-600/60 shadow-lg shadow-red-950/50">0</button>
+                            <span class="text-[10px] font-semibold text-red-400 mt-1">符号</span>
+                        </div>
+
+                        <!-- Bits 14-10: Exponent (5 bits) -->
+                        <div class="col-span-5 flex flex-col items-center bg-green-950/20 p-1 rounded-xl border border-green-900/30">
+                            <div class="w-full flex justify-between px-1 mb-1">
+                                <span class="text-[10px] font-mono text-green-400">14</span>
+                                <span class="text-[10px] font-mono text-green-400">10</span>
+                            </div>
+                            <div class="grid grid-cols-5 gap-1 w-full">
+                                <button id="bit-14" onclick="toggleBit(14)" class="bit-btn w-full aspect-square rounded-lg font-mono font-bold text-base flex items-center justify-center bg-green-950 text-green-300 border border-green-600/60">0</button>
+                                <button id="bit-13" onclick="toggleBit(13)" class="bit-btn w-full aspect-square rounded-lg font-mono font-bold text-base flex items-center justify-center bg-green-950 text-green-300 border border-green-600/60">1</button>
+                                <button id="bit-12" onclick="toggleBit(12)" class="bit-btn w-full aspect-square rounded-lg font-mono font-bold text-base flex items-center justify-center bg-green-950 text-green-300 border border-green-600/60">1</button>
+                                <button id="bit-11" onclick="toggleBit(11)" class="bit-btn w-full aspect-square rounded-lg font-mono font-bold text-base flex items-center justify-center bg-green-950 text-green-300 border border-green-600/60">1</button>
+                                <button id="bit-10" onclick="toggleBit(10)" class="bit-btn w-full aspect-square rounded-lg font-mono font-bold text-base flex items-center justify-center bg-green-950 text-green-300 border border-green-600/60">1</button>
+                            </div>
+                            <span class="text-[10px] font-semibold text-green-400 mt-1">指数部 (5 bits)</span>
+                        </div>
+
+                        <!-- Bits 9-0: Mantissa (10 bits) -->
+                        <div class="col-span-10 flex flex-col items-center bg-amber-950/20 p-1 rounded-xl border border-amber-900/30">
+                            <div class="w-full flex justify-between px-1 mb-1">
+                                <span class="text-[10px] font-mono text-amber-400">9</span>
+                                <span class="text-[10px] font-mono text-amber-400">0</span>
+                            </div>
+                            <div class="grid grid-cols-10 gap-1 w-full">
+                                <button id="bit-9" onclick="toggleBit(9)" class="bit-btn w-full aspect-square rounded-lg font-mono font-bold text-xs sm:text-sm flex items-center justify-center bg-amber-950 text-amber-300 border border-amber-600/60">0</button>
+                                <button id="bit-8" onclick="toggleBit(8)" class="bit-btn w-full aspect-square rounded-lg font-mono font-bold text-xs sm:text-sm flex items-center justify-center bg-amber-950 text-amber-300 border border-amber-600/60">0</button>
+                                <button id="bit-7" onclick="toggleBit(7)" class="bit-btn w-full aspect-square rounded-lg font-mono font-bold text-xs sm:text-sm flex items-center justify-center bg-amber-950 text-amber-300 border border-amber-600/60">0</button>
+                                <button id="bit-6" onclick="toggleBit(6)" class="bit-btn w-full aspect-square rounded-lg font-mono font-bold text-xs sm:text-sm flex items-center justify-center bg-amber-950 text-amber-300 border border-amber-600/60">0</button>
+                                <button id="bit-5" onclick="toggleBit(5)" class="bit-btn w-full aspect-square rounded-lg font-mono font-bold text-xs sm:text-sm flex items-center justify-center bg-amber-950 text-amber-300 border border-amber-600/60">0</button>
+                                <button id="bit-4" onclick="toggleBit(4)" class="bit-btn w-full aspect-square rounded-lg font-mono font-bold text-xs sm:text-sm flex items-center justify-center bg-amber-950 text-amber-300 border border-amber-600/60">0</button>
+                                <button id="bit-3" onclick="toggleBit(3)" class="bit-btn w-full aspect-square rounded-lg font-mono font-bold text-xs sm:text-sm flex items-center justify-center bg-amber-950 text-amber-300 border border-amber-600/60">0</button>
+                                <button id="bit-2" onclick="toggleBit(2)" class="bit-btn w-full aspect-square rounded-lg font-mono font-bold text-xs sm:text-sm flex items-center justify-center bg-amber-950 text-amber-300 border border-amber-600/60">0</button>
+                                <button id="bit-1" onclick="toggleBit(1)" class="bit-btn w-full aspect-square rounded-lg font-mono font-bold text-xs sm:text-sm flex items-center justify-center bg-amber-950 text-amber-300 border border-amber-600/60">0</button>
+                                <button id="bit-0" onclick="toggleBit(0)" class="bit-btn w-full aspect-square rounded-lg font-mono font-bold text-xs sm:text-sm flex items-center justify-center bg-amber-950 text-amber-300 border border-amber-600/60">0</button>
+                            </div>
+                            <span class="text-[10px] font-semibold text-amber-400 mt-1">仮数部 (10 bits)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Evaluated Result Banner -->
+                <div class="bg-slate-950 border border-cyan-500/30 rounded-xl p-5 relative overflow-hidden shadow-2xl">
+                    <div class="absolute top-0 right-0 p-3 opacity-10">
+                        <i class="fa-solid fa-calculator text-8xl text-cyan-400"></i>
+                    </div>
+                    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest block mb-1">復元された10進数値 (Evaluated Value)</span>
+                            <div id="decimal-result" class="text-3xl sm:text-4xl font-extrabold font-mono text-white tracking-tight">
+                                1.0
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span id="badge-status" class="px-3 py-1 rounded-full text-xs font-bold bg-cyan-950 text-cyan-300 border border-cyan-700">正規化数 (Normalized)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mathematical Step Breakdown Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- 1. Sign Component -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 relative overflow-hidden">
+                    <div class="border-b border-slate-800 pb-2 flex justify-between items-center">
+                        <span class="text-xs font-bold text-red-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus-minus"></i> 符号 (Sign)
+                        </span>
+                        <span id="card-sign-bit" class="font-mono text-xs font-bold bg-red-950 text-red-300 px-2 py-0.5 rounded border border-red-800">Bit15 = 0</span>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="text-xs text-slate-400">計算式: <span class="font-mono text-slate-200">(-1)<sup>S</sup></span></div>
+                        <div id="card-sign-calc" class="font-mono text-sm text-slate-100 bg-slate-950 p-2 rounded border border-slate-800">
+                            (-1)<sup>0</sup> = <strong class="text-red-400">+1 (正の数)</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Exponent Component -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 relative overflow-hidden">
+                    <div class="border-b border-slate-800 pb-2 flex justify-between items-center">
+                        <span class="text-xs font-bold text-green-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-arrow-up-right-dots"></i> 指数部 (Exponent)
+                        </span>
+                        <span id="card-exp-bits" class="font-mono text-xs font-bold bg-green-950 text-green-300 px-2 py-0.5 rounded border border-green-800">01111₂ = 15</span>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="text-xs text-slate-400">バイアス引き算: <span class="font-mono text-slate-200">2<sup>(E - 15)</sup></span></div>
+                        <div id="card-exp-calc" class="font-mono text-sm text-slate-100 bg-slate-950 p-2 rounded border border-slate-800">
+                            2<sup>15 - 15</sup> = 2<sup>0</sup> = <strong class="text-green-400">1</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Mantissa Component -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 relative overflow-hidden">
+                    <div class="border-b border-slate-800 pb-2 flex justify-between items-center">
+                        <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-code-commit"></i> 仮数部 (Mantissa)
+                        </span>
+                        <span id="card-mant-bits" class="font-mono text-xs font-bold bg-amber-950 text-amber-300 px-2 py-0.5 rounded border border-amber-800">0000000000</span>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="text-xs text-slate-400">隠しビット適用: <span class="font-mono text-slate-200">1.f₂</span></div>
+                        <div id="card-mant-calc" class="font-mono text-sm text-slate-100 bg-slate-950 p-2 rounded border border-slate-800">
+                            1 + 0 = <strong class="text-amber-400">1.0</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Expansion Formula -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
+                <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-square-root-variable text-cyan-400"></i> 完全な展開式 (Formula Expansion)
+                </h3>
+                <div id="formula-breakdown" class="font-mono text-xs sm:text-sm bg-slate-950 p-4 rounded-xl border border-slate-800 text-slate-300 overflow-x-auto leading-relaxed">
+                    <!-- Dynamic Formula Here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: DECIMAL CONVERTER & ROUNDING ERROR -->
+        <section id="sec-converter" class="space-y-6 hidden">
+            <!-- Header banner -->
+            <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-4 flex items-start space-x-3 shadow-md">
+                <i class="fa-solid fa-wand-magic-sparkles text-emerald-400 text-lg mt-0.5"></i>
+                <div class="text-sm text-slate-300">
+                    <span class="font-bold text-white">10進数 ➔ 16ビット浮動小数点数 変換解説:</span> 10進数値を入力すると、符号・指数・仮数へ変換される過程と、コンピュータ内部で起こる「丸め誤差」を視覚的に検証できます。
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Input Panel -->
+                <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-pen-to-square text-emerald-400"></i> 10進数値を入力
+                    </h3>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label for="dec-input" class="block text-xs font-semibold text-slate-400 mb-1">数値を直接入力</label>
+                            <div class="flex gap-2">
+                                <input type="number" id="dec-input" step="any" value="6.25" class="bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-lg font-mono text-white focus:outline-none focus:border-emerald-500 w-full">
+                                <button onclick="convertDecimalInput()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-sm rounded-xl transition shadow-lg shadow-emerald-950/50 flex items-center gap-2 whitespace-nowrap">
+                                    <i class="fa-solid fa-play"></i> 変換
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Range Slider for smooth testing -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs text-slate-400 font-mono">
+                                <span>-20.0</span>
+                                <span>スライダー調整</span>
+                                <span>+20.0</span>
+                            </div>
+                            <input type="range" id="dec-slider" min="-20" max="20" step="0.125" value="6.25" oninput="syncSliderToInput(this.value)" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                        </div>
+
+                        <!-- Preset sample buttons -->
+                        <div class="pt-2 border-t border-slate-800">
+                            <span class="text-xs text-slate-400 block mb-2 font-semibold">テスト用のおすすめ数値:</span>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="setConverterPreset(0.1)" class="text-xs px-2.5 py-1 bg-amber-950/60 border border-amber-700/50 text-amber-300 rounded-lg hover:bg-amber-900">0.1 (循環小数)</button>
+                                <button onclick="setConverterPreset(6.25)" class="text-xs px-2.5 py-1 bg-slate-800 border border-slate-700 text-slate-200 rounded-lg hover:bg-slate-700">6.25 (割り切れる)</button>
+                                <button onclick="setConverterPreset(-0.375)" class="text-xs px-2.5 py-1 bg-slate-800 border border-slate-700 text-slate-200 rounded-lg hover:bg-slate-700">-0.375</button>
+                                <button onclick="setConverterPreset(0.00005)" class="text-xs px-2.5 py-1 bg-slate-800 border border-slate-700 text-slate-200 rounded-lg hover:bg-slate-700">0.00005 (非常に小さな数)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rounding Error Warning Box -->
+                    <div id="error-analysis-box" class="bg-amber-950/30 border border-amber-700/40 rounded-xl p-4 space-y-2">
+                        <div class="flex items-center space-x-2 text-amber-400 font-bold text-xs">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <span>丸め誤差 (Rounding Error) の分析</span>
+                        </div>
+                        <div class="text-xs text-slate-300 space-y-1 font-mono">
+                            <div>入力値: <span id="err-orig-val" class="text-white font-bold">6.25</span></div>
+                            <div>実際保持値: <span id="err-actual-val" class="text-amber-300 font-bold">6.25</span></div>
+                            <div>誤差(差分): <span id="err-diff-val" class="text-emerald-400 font-bold">0.0 (誤差なし)</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conversion Steps Panel -->
+                <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-emerald-400"></i> 変換ステップ順序
+                    </h3>
+
+                    <div id="conversion-steps-container" class="space-y-4">
+                        <!-- Step Cards generated by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: QUIZ MODE -->
+        <section id="sec-quiz" class="space-y-6 hidden">
+            <!-- Quiz Card -->
+            <div class="max-w-3xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
+                <!-- Quiz Header -->
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div class="flex items-center space-x-3">
+                        <span id="quiz-number-badge" class="px-3 py-1 bg-amber-950 text-amber-400 border border-amber-700 rounded-full font-bold text-xs">
+                            問題 1 / 5
+                        </span>
+                        <span class="text-xs text-slate-400">高校情報Ⅰ 定着度チェック</span>
+                    </div>
+                    <div class="text-xs font-bold text-slate-400">
+                        スコア: <span id="quiz-score" class="text-cyan-400 text-sm font-mono">0</span> 点
+                    </div>
+                </div>
+
+                <!-- Question Text -->
+                <div class="space-y-3">
+                    <h3 id="quiz-question-text" class="text-lg font-bold text-white leading-relaxed">
+                        <!-- Dynamic Question -->
+                    </h3>
+                    <div id="quiz-code-box" class="hidden font-mono bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm text-cyan-300">
+                        <!-- Optional Bit Diagram -->
+                    </div>
+                </div>
+
+                <!-- Choice Buttons -->
+                <div id="quiz-options-container" class="grid grid-cols-1 gap-3">
+                    <!-- Option Buttons Rendered Here -->
+                </div>
+
+                <!-- Quiz Feedback Box -->
+                <div id="quiz-feedback-box" class="hidden rounded-xl p-4 border space-y-2">
+                    <div id="quiz-feedback-title" class="font-bold text-sm flex items-center gap-2"></div>
+                    <p id="quiz-feedback-desc" class="text-xs text-slate-300 leading-relaxed"></p>
+                    <button onclick="nextQuizQuestion()" class="mt-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-bold text-xs rounded-lg transition">
+                        次の問題へ <i class="fa-solid fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: CONCEPTUAL GUIDE & THEORY -->
+        <section id="sec-theory" class="space-y-6 hidden">
+            <!-- Educational Articles Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- Article 1: Structure -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                    <div class="flex items-center space-x-3 text-cyan-400">
+                        <i class="fa-solid fa-layer-group text-2xl"></i>
+                        <h3 class="text-base font-bold text-white">1. 16ビット浮動小数点数の構造</h3>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        16ビット（2バイト）を使って実数を表現する形式（IEEE 754 半精度標準）です。固定小数点数と比べて「非常に大きな数」や「非常に小さな数」を効率よく扱えます。
+                    </p>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs space-y-2 font-mono">
+                        <div class="flex items-center justify-between"><span class="text-red-400 font-bold">符号部 (Bit 15):</span> <span>0 ➔ 正(+), 1 ➔ 負(-)</span></div>
+                        <div class="flex items-center justify-between"><span class="text-green-400 font-bold">指数部 (Bits 14-10):</span> <span>5ビット (バイアス値 = 15)</span></div>
+                        <div class="flex items-center justify-between"><span class="text-amber-400 font-bold">仮数部 (Bits 9-0):</span> <span>10ビット (隠しビット 1.f)</span></div>
+                    </div>
+                </div>
+
+                <!-- Article 2: Hidden Bit -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                    <div class="flex items-center space-x-3 text-purple-400">
+                        <i class="fa-solid fa-ghost text-2xl"></i>
+                        <h3 class="text-base font-bold text-white">2. 「隠しビット (Hidden Bit)」の工夫</h3>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        正規化された数では、2進数表記で必ず <code class="text-purple-300 bg-purple-950 px-1 rounded">1.xxxx...₂</code> の形になります。
+                        先頭の「1」は決まりきっているためメモリ上に記録せず省略します。これにより、同じ10ビットで実質11ビット分の精度を確保しています。
+                    </p>
+                </div>
+
+                <!-- Article 3: Bias -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                    <div class="flex items-center space-x-3 text-green-400">
+                        <i class="fa-solid fa-scale-balanced text-2xl"></i>
+                        <h3 class="text-base font-bold text-white">3. バイアス表現 (ゲタ履き表現)</h3>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        指数部には負の指数（小数を表すため）も必要です。符号ビットを使わずに正負を表現するため、実際の指数に <strong class="text-green-400">15</strong> を足した値（ゲタを履かせた値）を記録します。
+                    </p>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs font-mono text-slate-300">
+                        実際の指数 = 指数部の読取値 - 15
+                    </div>
+                </div>
+
+                <!-- Article 4: Information I Terms -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                    <div class="flex items-center space-x-3 text-amber-400">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                        <h3 class="text-base font-bold text-white">4. 情報Ⅰ試験によく出る誤差の用語</h3>
+                    </div>
+                    <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside">
+                        <li><strong class="text-white">丸め誤差:</strong> 仮数部の桁数制限により、無限小数などを途中で切捨・四捨五入することで生じる誤差。</li>
+                        <li><strong class="text-white">桁落ち:</strong> ほぼ等しい2つの数値の引き算で、有効数字が激減する現象。</li>
+                        <li><strong class="text-white">情報落ち:</strong> 極端に大きさが異なる数値の加減算で、小さい方の情報が消える現象。</li>
+                        <li><strong class="text-white">オーバーフロー (桁あふれ):</strong> 表現可能な最大の数を超えてしまうこと。</li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-4 mt-8">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
+            高校情報Ⅰ 浮動小数点数（16-bit Half Precision）学習シミュレータ &copy; 2026 Educational Tech
+        </div>
+    </footer>
+
+    <script>
+        // State variables for Bit Manipulator
+        let bitArray = new Array(16).fill(0);
+        // Default to 1.0 (Bit 15=0, Exponent=01111=15, Mantissa=0)
+        bitArray[14] = 1; bitArray[13] = 1; bitArray[12] = 1; bitArray[11] = 1;
+
+        // Current active tab
+        let currentTab = 'lab';
+
+        // Initialize App on DOM Loaded
+        window.addEventListener('DOMContentLoaded', () => {
+            updateBitUI();
+            initQuiz();
+        });
+
+        function toggleBit(index) {
+            bitArray[index] = bitArray[index] === 0 ? 1 : 0;
+            updateBitUI();
+        }
+
+        function setPreset(type) {
+            bitArray.fill(0);
+            if (type === '1.0') {
+                // Sign=0, Exp=15 (01111), Mant=0
+                [14, 13, 12, 11].forEach(i => bitArray[i] = 1);
+            } else if (type === '-2.5') {
+                // -2.5 = -1.01_2 * 2^1 -> Exp=16 (10000), Mant=0100000000
+                bitArray[15] = 1; // Sign
+                bitArray[14] = 1; // Exp 16
+                bitArray[8] = 1;  // Mant 0.25 (1/4)
+            } else if (type === '0.15625') {
+                // 0.15625 = 5/32 = 1.25 * 2^-3 -> Exp=12 (01100), Mant=0100000000
+                [13, 12].forEach(i => bitArray[i] = 1);
+                bitArray[8] = 1;
+            } else if (type === '65504') {
+                // Max normalized: Exp=30 (11110), Mant=all 1
+                [14, 13, 12, 11].forEach(i => bitArray[i] = 1);
+                for(let i=0; i<10; i++) bitArray[i] = 1;
+            } else if (type === 'min-pos') {
+                // Min positive normalized: Exp=1 (00001), Mant=0
+                bitArray[10] = 1;
+            } else if (type === '0.1') {
+                // 0.1 in float16: Sign=0, Exp=11 (01011), Mant=0110011010
+                [13, 11, 8, 7, 4, 3, 1].forEach(i => bitArray[i] = 1);
+            } else if (type === 'inf') {
+                // +Inf: Exp=31 (11111), Mant=0
+                [14, 13, 12, 11, 10].forEach(i => bitArray[i] = 1);
+            } else if (type === 'nan') {
+                // NaN: Exp=31, Mant!=0
+                [14, 13, 12, 11, 10, 0].forEach(i => bitArray[i] = 1);
+            } else if (type === 'zero') {
+                // 0.0
+            }
+            updateBitUI();
+        }
+
+        function updateBitUI() {
+            // Update individual bit buttons
+            for (let i = 0; i < 16; i++) {
+                const btn = document.getElementById(`bit-${i}`);
+                if (!btn) continue;
+                const val = bitArray[i];
+                btn.textContent = val;
+
+                // Dynamic styling based on bit value and category
+                if (i === 15) {
+                    btn.className = `bit-btn w-full aspect-square rounded-lg font-mono font-bold text-lg flex items-center justify-center border transition ${val ? 'bg-red-600 text-white border-red-400 shadow-lg shadow-red-600/50' : 'bg-red-950/60 text-red-400 border-red-800/60'}`;
+                } else if (i >= 10) {
+                    btn.className = `bit-btn w-full aspect-square rounded-lg font-mono font-bold text-base flex items-center justify-center border transition ${val ? 'bg-green-600 text-white border-green-400 shadow-lg shadow-green-600/50' : 'bg-green-950/60 text-green-300 border-green-800/60'}`;
+                } else {
+                    btn.className = `bit-btn w-full aspect-square rounded-lg font-mono font-bold text-xs sm:text-sm flex items-center justify-center border transition ${val ? 'bg-amber-500 text-slate-950 border-amber-300 shadow-lg shadow-amber-500/50' : 'bg-amber-950/60 text-amber-300 border-amber-800/60'}`;
+                }
+            }
+
+            // Calculate IEEE 754 value
+            const parsed = evaluateFloat16(bitArray);
+
+            // Hex display
+            const hexVal = bitsToHex(bitArray);
+            document.getElementById('hex-display').textContent = `16進数: 0x${hexVal}`;
+
+            // Main decimal display
+            document.getElementById('decimal-result').textContent = parsed.displayValue;
+
+            // Status Badge
+            const badge = document.getElementById('badge-status');
+            badge.textContent = parsed.statusText;
+            badge.className = `px-3 py-1 rounded-full text-xs font-bold border ${parsed.statusClass}`;
+
+            // Step cards
+            document.getElementById('card-sign-bit').textContent = `Bit15 = ${parsed.sign}`;
+            document.getElementById('card-sign-calc').innerHTML = `(-1)<sup>${parsed.sign}</sup> = <strong class="text-red-400">${parsed.sign === 0 ? '+1 (正)' : '-1 (負)'}</strong>`;
+
+            document.getElementById('card-exp-bits').textContent = `${parsed.expBitsStr}₂ = ${parsed.expRaw}`;
+            if (parsed.isSpecial) {
+                document.getElementById('card-exp-calc').innerHTML = `<strong class="text-green-400">${parsed.expStatusNote}</strong>`;
+            } else if (parsed.isSubnormal) {
+                document.getElementById('card-exp-calc').innerHTML = `2<sup>1 - 15</sup> = 2<sup>-14</sup> <span class="text-xs text-green-300">(非正規化数)</span>`;
+            } else {
+                document.getElementById('card-exp-calc').innerHTML = `2<sup>${parsed.expRaw} - 15</sup> = 2<sup>${parsed.actualExp}</sup> = <strong class="text-green-400">${Math.pow(2, parsed.actualExp)}</strong>`;
+            }
+
+            document.getElementById('card-mant-bits').textContent = parsed.mantBitsStr;
+            if (parsed.isSpecial) {
+                document.getElementById('card-mant-calc').innerHTML = `<strong class="text-amber-400">${parsed.mantStatusNote}</strong>`;
+            } else if (parsed.isSubnormal) {
+                document.getElementById('card-mant-calc').innerHTML = `0 + ${parsed.mantFraction.toFixed(4)} = <strong class="text-amber-400">${parsed.mantFraction.toFixed(4)}</strong>`;
+            } else {
+                document.getElementById('card-mant-calc').innerHTML = `1 + ${parsed.mantFraction.toFixed(4)} = <strong class="text-amber-400">${(1 + parsed.mantFraction).toFixed(4)}</strong>`;
+            }
+
+            // Formula Breakdown HTML
+            document.getElementById('formula-breakdown').innerHTML = parsed.formulaHtml;
+        }
+
+        function bitsToHex(bits) {
+            let num = 0;
+            for (let i = 0; i < 16; i++) {
+                num = (num << 1) | bits[15 - i];
+            }
+            return num.toString(16).toUpperCase().padStart(4, '0');
+        }
+
+        function evaluateFloat16(bits) {
+            const sign = bits[15];
+            const expRaw = (bits[14]<<4) | (bits[13]<<3) | (bits[12]<<2) | (bits[11]<<1) | bits[10];
+            const expBitsStr = bits.slice(10, 15).reverse().join('');
+            
+            let mantVal = 0;
+            for (let i = 0; i < 10; i++) {
+                mantVal = (mantVal << 1) | bits[9 - i];
+            }
+            const mantBitsStr = bits.slice(0, 10).reverse().join('');
+            const mantFraction = mantVal / 1024; // 2^10 = 1024
+
+            let displayValue = '';
+            let statusText = '';
+            let statusClass = '';
+            let isSpecial = false;
+            let isSubnormal = false;
+            let expStatusNote = '';
+            let mantStatusNote = '';
+            let formulaHtml = '';
+
+            const signMultiplier = sign === 0 ? 1 : -1;
+
+            if (expRaw === 31) {
+                isSpecial = true;
+                if (mantVal !== 0) {
+                    displayValue = 'NaN (Not a Number / 非数)';
+                    statusText = '非数 (NaN)';
+                    statusClass = 'bg-rose-950 text-rose-300 border-rose-700';
+                    expStatusNote = '全1 (31)';
+                    mantStatusNote = '非ゼロ (NaN)';
+                    formulaHtml = `<span class="text-rose-400">指数部が全1かつ仮数部が非ゼロのため、計算結果が定義されない「非数 (NaN)」を表します。</span>`;
+                } else {
+                    displayValue = sign === 0 ? '+∞ (正の無限大)' : '-∞ (負の無限大)';
+                    statusText = '無限大 (Infinity)';
+                    statusClass = 'bg-purple-950 text-purple-300 border-purple-700';
+                    expStatusNote = '全1 (31)';
+                    mantStatusNote = 'ゼロ';
+                    formulaHtml = `<span class="text-purple-400">指数部が全1かつ仮数部がゼロのため、オーバーフローまたはゼロ除算による「${displayValue}」を表します。</span>`;
+                }
+            } else if (expRaw === 0) {
+                if (mantVal === 0) {
+                    displayValue = sign === 0 ? '0.0 (+0)' : '-0.0 (-0)';
+                    statusText = 'ゼロ (Zero)';
+                    statusClass = 'bg-slate-800 text-slate-300 border-slate-600';
+                    isSpecial = true;
+                    expStatusNote = '全0';
+                    mantStatusNote = 'ゼロ';
+                    formulaHtml = `(-1)<sup>${sign}</sup> × 0 = <strong class="text-white">${displayValue}</strong>`;
+                } else {
+                    // Subnormal number
+                    isSubnormal = true;
+                    statusText = '非正規化数 (Subnormal)';
+                    statusClass = 'bg-indigo-950 text-indigo-300 border-indigo-700';
+                    const val = signMultiplier * mantFraction * Math.pow(2, -14);
+                    displayValue = val.toPrecision(7);
+                    formulaHtml = `(-1)<sup>${sign}</sup> × 0.${mantBitsStr}₂ × 2<sup>-14</sup><br>` +
+                        `= (${signMultiplier}) × (${mantFraction}) × 2<sup>-14</sup> = <strong class="text-cyan-300">${val}</strong>`;
+                }
+            } else {
+                // Normalized number
+                const actualExp = expRaw - 15;
+                const mantTotal = 1 + mantFraction;
+                const val = signMultiplier * mantTotal * Math.pow(2, actualExp);
+                displayValue = val.toString();
+                statusText = '正規化数 (Normalized)';
+                statusClass = 'bg-cyan-950 text-cyan-300 border-cyan-700';
+
+                // Construct detailed math formula
+                let mantExpansionTerms = [];
+                for (let i = 0; i < 10; i++) {
+                    if (bits[9 - i] === 1) {
+                        mantExpansionTerms.push(`2<sup>-${i + 1}</sup>`);
+                    }
+                }
+                const mantTermsText = mantExpansionTerms.length > 0 ? mantExpansionTerms.join(' + ') : '0';
+
+                formulaHtml = `
+                    <div class="space-y-1">
+                        <div><span class="text-slate-400">基本式:</span> (-1)<sup>S</sup> × (1 + 仮数) × 2<sup>(E - 15)</sup></div>
+                        <div><span class="text-slate-400">代入:</span> (${signMultiplier}) × (1 + [${mantTermsText}]) × 2<sup>(${expRaw} - 15)</sup></div>
+                        <div><span class="text-slate-400">計算:</span> (${signMultiplier}) × (${mantTotal}) × ${Math.pow(2, actualExp)} = <strong class="text-cyan-300 text-base">${val}</strong></div>
+                    </div>
+                `;
+            }
+
+            return {
+                sign,
+                expRaw,
+                actualExp: expRaw - 15,
+                expBitsStr,
+                mantVal,
+                mantBitsStr,
+                mantFraction,
+                displayValue,
+                statusText,
+                statusClass,
+                isSpecial,
+                isSubnormal,
+                expStatusNote,
+                mantStatusNote,
+                formulaHtml
+            };
+        }
+
+        function convertDecimalInput() {
+            const inputEl = document.getElementById('dec-input');
+            const val = parseFloat(inputEl.value);
+            if (isNaN(val)) return;
+
+            renderConversionSteps(val);
+        }
+
+        function syncSliderToInput(val) {
+            document.getElementById('dec-input').value = val;
+            convertDecimalInput();
+        }
+
+        function setConverterPreset(val) {
+            document.getElementById('dec-input').value = val;
+            document.getElementById('dec-slider').value = val;
+            convertDecimalInput();
+        }
+
+        function renderConversionSteps(val) {
+            const container = document.getElementById('conversion-steps-container');
+            container.innerHTML = '';
+
+            const absVal = Math.abs(val);
+            const sign = val < 0 || Object.is(val, -0) ? 1 : 0;
+
+            // Compute Float16 equivalent using simulation
+            const f16Bits = decimalToFloat16Bits(val);
+            const reconstructed = evaluateFloat16(f16Bits);
+
+            // Error analysis
+            const origVal = val;
+            const actualVal = parseFloat(reconstructed.displayValue);
+            const diff = Math.abs(origVal - actualVal);
+
+            document.getElementById('err-orig-val').textContent = origVal;
+            document.getElementById('err-actual-val').textContent = reconstructed.displayValue;
+            
+            const errBox = document.getElementById('error-analysis-box');
+            if (isNaN(actualVal) || !isFinite(actualVal)) {
+                document.getElementById('err-diff-val').textContent = '測定不能 (特殊値)';
+                errBox.className = 'bg-purple-950/30 border border-purple-700/40 rounded-xl p-4 space-y-2';
+            } else if (diff === 0) {
+                document.getElementById('err-diff-val').textContent = '0.0 (誤差なし・完全表現)';
+                document.getElementById('err-diff-val').className = 'text-emerald-400 font-bold';
+                errBox.className = 'bg-emerald-950/30 border border-emerald-700/40 rounded-xl p-4 space-y-2';
+            } else {
+                document.getElementById('err-diff-val').textContent = `約 ${diff.toExponential(4)} (丸め誤差発生)`;
+                document.getElementById('err-diff-val').className = 'text-amber-400 font-bold';
+                errBox.className = 'bg-amber-950/30 border border-amber-700/40 rounded-xl p-4 space-y-2';
+            }
+
+            // Step 1: Sign Step
+            addStepCard(container, 1, '符号部 (Sign Bit) の決定', 
+                `数値が <strong>${val >= 0 ? '正 (+)' : '負 (-)'}</strong> であるため、符号ビット Bit15 は <code class="font-mono text-red-400 font-bold">${sign}</code> になります。`
+            );
+
+            // Step 2: Binary Integer & Fraction Conversion
+            if (val === 0) {
+                addStepCard(container, 2, '2進数変換 & 正規化', 
+                    `0 のため、指数部・仮数部はすべて0となります。`
+                );
+            } else if (!isFinite(val)) {
+                addStepCard(container, 2, '特殊値の処理', 
+                    `値が無限大のため、指数部は全1 (31) となります。`
+                );
+            } else {
+                // Bin conversion representation
+                const expEst = Math.floor(Math.log2(absVal));
+                const normVal = absVal / Math.pow(2, expEst);
+                const expBiased = expEst + 15;
+
+                addStepCard(container, 2, '2進数表記と正規化 (1.xxxx...₂ × 2ⁿ)', 
+                    `絶対値 ${absVal} を2進数表現に変換して正規化します：<br>` +
+                    `<div class="font-mono bg-slate-950 p-2 rounded mt-1 border border-slate-800 text-cyan-300 text-xs">` +
+                    `${absVal} ➔ ${normVal.toFixed(6)} × 2<sup>${expEst}</sup>` +
+                    `</div>`
+                );
+
+                // Step 3: Exponent Biasing
+                addStepCard(container, 3, '指数部 (Exponent) にバイアス(15)を付加', 
+                    `実際の指数 <code class="font-mono text-white">${expEst}</code> にバイアス <code class="font-mono text-white">15</code> を足します：<br>` +
+                    `<div class="font-mono bg-slate-950 p-2 rounded mt-1 border border-slate-800 text-green-300 text-xs">` +
+                    `${expEst} + 15 = ${expBiased} (2進数 5bit ➔ <strong>${reconstructed.expBitsStr}₂</strong>)` +
+                    `</div>`
+                );
+
+                // Step 4: Mantissa & Rounding
+                addStepCard(container, 4, '仮数部 (Mantissa) の抽出と10ビット丸め', 
+                    `正規化された形式 <code class="font-mono text-white">1.f</code> から先頭の「1.」を取り除き、小数第10位までに丸めます：<br>` +
+                    `<div class="font-mono bg-slate-950 p-2 rounded mt-1 border border-slate-800 text-amber-300 text-xs">` +
+                    `仮数ビット (10bits) = <strong>${reconstructed.mantBitsStr}</strong>` +
+                    `</div>`
+                );
+            }
+
+            // Step 5: Final Bit Layout
+            const bitHtml = f16Bits.map((b, idx) => {
+                let colorClass = 'bg-amber-950 text-amber-300 border-amber-700';
+                if (idx === 15) colorClass = 'bg-red-950 text-red-300 border-red-700';
+                else if (idx >= 10) colorClass = 'bg-green-950 text-green-300 border-green-700';
+                return `<span class="px-1.5 py-0.5 rounded font-mono font-bold text-xs border ${colorClass}">${b}</span>`;
+            }).reverse().join(' ');
+
+            addStepCard(container, 5, '完成した16ビット列', 
+                `<div class="flex flex-wrap gap-1 mt-1">${bitHtml}</div>` +
+                `<div class="mt-2 text-xs text-slate-400">16進数表記: <strong class="text-white font-mono">0x${bitsToHex(f16Bits)}</strong></div>`
+            );
+        }
+
+        function addStepCard(container, stepNum, title, bodyHtml) {
+            const card = document.createElement('div');
+            card.className = 'bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-1.5';
+            card.innerHTML = `
+                <div class="flex items-center space-x-2 text-xs font-bold text-emerald-400">
+                    <span class="w-5 h-5 rounded-full bg-emerald-950 border border-emerald-700 flex items-center justify-center font-mono text-[10px] text-emerald-300">${stepNum}</span>
+                    <span>${title}</span>
+                </div>
+                <div class="text-xs text-slate-300 leading-relaxed pl-7">${bodyHtml}</div>
+            `;
+            container.appendChild(card);
+        }
+
+        function decimalToFloat16Bits(val) {
+            const bits = new Array(16).fill(0);
+            if (isNaN(val)) {
+                // NaN
+                for(let i=10; i<=15; i++) bits[i] = 1;
+                bits[0] = 1;
+                return bits;
+            }
+
+            const sign = val < 0 || Object.is(val, -0) ? 1 : 0;
+            bits[15] = sign;
+
+            let absVal = Math.abs(val);
+            if (absVal === 0) return bits;
+
+            if (absVal > 65504) {
+                // Overflow to Inf
+                for(let i=10; i<=14; i++) bits[i] = 1;
+                return bits;
+            }
+
+            let exp = Math.floor(Math.log2(absVal));
+            let biasedExp = exp + 15;
+
+            if (biasedExp <= 0) {
+                // Subnormal handling
+                let mantVal = Math.round((absVal / Math.pow(2, -14)) * 1024);
+                for(let i=0; i<10; i++) {
+                    bits[i] = (mantVal >> i) & 1;
+                }
+                return bits;
+            }
+
+            if (biasedExp >= 31) {
+                // Inf
+                for(let i=10; i<=14; i++) bits[i] = 1;
+                return bits;
+            }
+
+            // Set exponent bits
+            for(let i=0; i<5; i++) {
+                bits[10 + i] = (biasedExp >> i) & 1;
+            }
+
+            // Mantissa
+            let normFrac = (absVal / Math.pow(2, exp)) - 1;
+            let mantVal = Math.round(normFrac * 1024);
+            if (mantVal >= 1024) {
+                mantVal = 0;
+                biasedExp += 1;
+                for(let i=0; i<5; i++) {
+                    bits[10 + i] = (biasedExp >> i) & 1;
+                }
+            }
+
+            for(let i=0; i<10; i++) {
+                bits[i] = (mantVal >> i) & 1;
+            }
+
+            return bits;
+        }
+
+        const quizData = [
+            {
+                q: "16ビット浮動小数点数（IEEE 754半精度）において、符号部・指数部・仮数部のビット数の組み合わせとして正しいものはどれですか？",
+                code: null,
+                options: [
+                    "符号: 1bit, 指数部: 5bits, 仮数部: 10bits",
+                    "符号: 1bit, 指数部: 8bits, 仮数部: 7bits",
+                    "符号: 2bits, 指数部: 4bits, 仮数部: 10bits",
+                    "符号: 1bit, 指数部: 10bits, 仮数部: 5bits"
+                ],
+                correct: 0,
+                exp: "16ビット浮動小数点数は、符号部1ビット、指数部5ビット、仮数部10ビットの計16ビットで構成されます。"
+            },
+            {
+                q: "16ビット浮動小数点数で、符号ビットが「1」のとき、数値の正負はどうなりますか？",
+                code: null,
+                options: [
+                    "正の数 (+)",
+                    "負の数 (-)",
+                    "常に 0",
+                    "定義されていない"
+                ],
+                correct: 1,
+                exp: "符号ビットは 0 が正 (+)、1 が負 (-) を表します。"
+            },
+            {
+                q: "16ビット浮動小数点数の指数部（5ビット）で用いられるバイアス値（ゲタ履き表現の加算値）はいくらですか？",
+                code: null,
+                options: [
+                    "127",
+                    "15",
+                    "31",
+                    "63"
+                ],
+                correct: 1,
+                exp: "5ビットの指数部ではバイアス値 15 が使われます。（※32ビット単精度の場合は127が使われます）。"
+            },
+            {
+                q: "正規化された仮数部で、メモリ上に記録せず省略される先頭の「1」を何と呼びますか？",
+                code: null,
+                options: [
+                    "隠しビット (Hidden Bit)",
+                    "ダミービット",
+                    "パリティビット",
+                    "符号ビット"
+                ],
+                correct: 0,
+                exp: "2進数の正規化では常に先頭が「1.xxxx」となるため、先頭の1を省略して精度を1ビット分稼ぐ「隠しビット (Hidden Bit / けずり落とし)」の技術が用いられます。"
+            },
+            {
+                q: "次の16ビット浮動小数点数のビット列が表す10進数値はいくらですか？",
+                code: "0 01111 0000000000",
+                options: [
+                    "0.0",
+                    "1.0",
+                    "2.0",
+                    "0.5"
+                ],
+                correct: 1,
+                exp: "符号=0(+), 指数部=15(15-15=0 ➔ 2⁰=1), 仮数=0(1.0)。したがって (+1) × 1.0 × 2⁰ = 1.0 となります。"
+            }
+        ];
+
+        let currentQuizIdx = 0;
+        let quizScore = 0;
+
+        function initQuiz() {
+            currentQuizIdx = 0;
+            quizScore = 0;
+            document.getElementById('quiz-score').textContent = '0';
+            renderQuizQuestion();
+        }
+
+        function renderQuizQuestion() {
+            const q = quizData[currentQuizIdx];
+            document.getElementById('quiz-number-badge').textContent = `問題 ${currentQuizIdx + 1} / ${quizData.length}`;
+            document.getElementById('quiz-question-text').textContent = q.q;
+
+            const codeBox = document.getElementById('quiz-code-box');
+            if (q.code) {
+                codeBox.classList.remove('hidden');
+                codeBox.textContent = `ビット列: ${q.code}`;
+            } else {
+                codeBox.classList.add('hidden');
+            }
+
+            const container = document.getElementById('quiz-options-container');
+            container.innerHTML = '';
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-cyan-500 hover:bg-slate-800/60 font-medium text-sm text-slate-200 transition flex items-center justify-between group';
+                btn.onclick = () => checkQuizAnswer(idx);
+                btn.innerHTML = `
+                    <span>${opt}</span>
+                    <i class="fa-regular fa-circle text-slate-600 group-hover:text-cyan-400"></i>
+                `;
+                container.appendChild(btn);
+            });
+
+            document.getElementById('quiz-feedback-box').classList.add('hidden');
+        }
+
+        function checkQuizAnswer(selectedIdx) {
+            const q = quizData[currentQuizIdx];
+            const feedbackBox = document.getElementById('quiz-feedback-box');
+            const titleEl = document.getElementById('quiz-feedback-title');
+            const descEl = document.getElementById('quiz-feedback-desc');
+
+            feedbackBox.classList.remove('hidden');
+
+            if (selectedIdx === q.correct) {
+                quizScore += 20;
+                document.getElementById('quiz-score').textContent = quizScore;
+                feedbackBox.className = 'rounded-xl p-4 border space-y-2 bg-emerald-950/40 border-emerald-700/60 text-emerald-300';
+                titleEl.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i> 正解です！';
+            } else {
+                feedbackBox.className = 'rounded-xl p-4 border space-y-2 bg-rose-950/40 border-rose-700/60 text-rose-300';
+                titleEl.innerHTML = '<i class="fa-solid fa-circle-xmark text-rose-400 text-lg"></i> 不正解';
+            }
+
+            descEl.textContent = q.exp;
+        }
+
+        function nextQuizQuestion() {
+            currentQuizIdx++;
+            if (currentQuizIdx < quizData.length) {
+                renderQuizQuestion();
+            } else {
+                showQuizResults();
+            }
+        }
+
+        function showQuizResults() {
+            const container = document.getElementById('sec-quiz');
+            container.innerHTML = `
+                <div class="max-w-xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center space-y-6 shadow-2xl">
+                    <div class="inline-flex p-4 rounded-full bg-amber-950/60 border border-amber-600/50 text-amber-400 text-4xl">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+                    <h3 class="text-2xl font-extrabold text-white">クイズ終了！</h3>
+                    <p class="text-sm text-slate-300">あなたの最終スコアは <strong class="text-cyan-400 text-2xl font-mono">${quizScore} / 100</strong> 点です。</p>
+                    <button onclick="location.reload()" class="px-6 py-3 bg-cyan-600 hover:bg-cyan-500 font-bold text-white text-sm rounded-xl transition shadow-lg shadow-cyan-950/50">
+                        もう一度挑戦する
+                    </button>
+                </div>
+            `;
+        }
+
+        function switchTab(tabId) {
+            currentTab = tabId;
+
+            // Update Tab Buttons UI
+            ['lab', 'converter', 'quiz', 'theory'].forEach(id => {
+                const btn = document.getElementById(`tab-${id}`);
+                const sec = document.getElementById(`sec-${id}`);
+
+                if (id === tabId) {
+                    btn.classList.add('active');
+                    sec.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('active');
+                    sec.classList.add('hidden');
+                }
+            });
+
+            if (tabId === 'converter') {
+                convertDecimalInput();
+            }
+        }
+    </script>
+</body>
+</html>
